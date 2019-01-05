@@ -14,7 +14,13 @@ module.exports = NodeHelper.create({
         if (notification === 'CONFIG') {
             this.config = payload;
             if (this.config.efaUrl.toLowerCase().endsWith("xml_dm_request")) this.outputFormat = "XML";
-
+            var mot = ""
+            if (this.config.meansOfTransport.length > 0) {
+                mot += "&MOT=0&includedMeans=1"
+                for (var i in this.config.meansOfTransport) {
+                    mot += "&inclMOT_" + this.config.meansOfTransport[i] + "=1";
+                }
+            }
             var efa_url = this.config.efaUrl;
             efa_url += '?name_dm=' + this.config.stopID;
             efa_url += '&type_dm=any';
@@ -23,8 +29,9 @@ module.exports = NodeHelper.create({
             efa_url += '&outputFormat=' + this.outputFormat;
             efa_url += '&mode=direct'
             efa_url += '&limit=' + this.config.maxDepartures;
-            efa_url += '&itdTime=' + moment().format('HHmm');
+            efa_url += '&itdTime=' + moment().add(this.config.walkingTime, 'm').format('HHmm');
             efa_url += '&itdDate=' + moment().format('YYYYMMDD');
+            efa_url += mot
             console.log(efa_url);
             this.getData(efa_url, this.config.stopID);
         }
@@ -70,17 +77,22 @@ module.exports = NodeHelper.create({
             }
 
             const cDt = realDt == null ? dt : realDt;
-
+            let skips = false;
+            if (typeof currentDeparture["m"]["dy"] !== "undefined") {
+                skips = parseInt(currentDeparture["m"]["dy"]) === -9999;
+            }
             list.push({
                 stopName: currentDeparture.n,
                 countdown: this.getDiffInMinutes(this.parseToDate(cDt), new Date()),
                 servingLine: {
-                    number: currentDeparture["m"]["n"] + " " + currentDeparture["m"]["nu"],
+                    //number: currentDeparture["m"]["n"] + " " + currentDeparture["m"]["nu"],
+					number: currentDeparture["m"]["nu"],
                     direction: currentDeparture["m"]["des"],
                     delay: delay
                 },
                 realDateTime: realDt,
-                dateTime: dt
+                dateTime: dt,
+                skips: skips
             })
         }
         return {departureList: list};

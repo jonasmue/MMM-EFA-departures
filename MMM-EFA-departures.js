@@ -22,7 +22,9 @@ Module.register("MMM-EFA-departures", {
         toggleDepTimePerReload: 6,              //Every 10 seconds
         fade: true,                             //fade brightness
         fadePoint: 0.25,                        //Start on 1/4th of the list. (1/maxDepartures would be ideal)
-        maxDepartures: 4                        //maximum amount of departures displayed
+        maxDepartures: 4,                       //maximum amount of departures displayed
+        walkingTime: 0,                          // Time to walk to station in minutes
+        meansOfTransport: []
     },
 
     start: function () {
@@ -55,7 +57,7 @@ Module.register("MMM-EFA-departures", {
     },
 
     getStyles: function () {
-        return ["MMM-EFA-departures.css"];
+        return ["MMM-EFA-departures.css", "font-awesome5.css"];
     },
 
     getScripts: function () {
@@ -66,7 +68,7 @@ Module.register("MMM-EFA-departures", {
         if (notification === "TRAMS" + this.config.stopID) {
             this.efa_data = payload;
             this.config.stopName = payload.departureList[0].stopName;
-            this.updateDom();
+            this.updateDom(500);
         }
     },
 
@@ -78,6 +80,7 @@ Module.register("MMM-EFA-departures", {
         var wrapper = document.createElement("div");
         var header = document.createElement("header");
         header.innerHTML = this.config.stopName;
+        if (this.config.walkingTime > 0) header.innerHTML += " (<span class='fas fa-fw fa-walking'></span> " + this.config.walkingTime + " min)";
         wrapper.appendChild(header);
 
         if (!this.efa_data) {
@@ -162,7 +165,9 @@ Module.register("MMM-EFA-departures", {
         delay.className = "departures__delay";
         if (data.servingLine.delay > 0) {
             delay.innerHTML = '<span class="departures__delay__time xsmall">+ ' + data.servingLine.delay + '</span>';
-        }
+        } else if (data.skips) {
+			delay.innerHTML = '<span class="departures__delay__time xsmall"><span class="fas fa-fw fa-times"></span></span>';
+		}
         row.appendChild(delay);
 
         return row;
